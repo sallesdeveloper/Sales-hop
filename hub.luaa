@@ -1,12 +1,109 @@
--- Hub Salles Hop (teste simples)
-local player = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+-- Salles Hop Hub Completo
+
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlaceId = game.PlaceId
+
+-- Interface
+local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 gui.Name = "SallesHop"
 
 local titulo = Instance.new("TextLabel", gui)
-titulo.Size = UDim2.new(0, 200, 0, 50)
-titulo.Position = UDim2.new(0.5, -100, 0.1, 0)
+titulo.Size = UDim2.new(0, 250, 0, 50)
+titulo.Position = UDim2.new(0.5, -125, 0.05, 0)
 titulo.Text = "Salles Hop Ativado!"
 titulo.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
 titulo.TextColor3 = Color3.new(1,1,1)
 titulo.TextScaled = true
+titulo.Font = Enum.Font.SourceSansBold
+
+-- Função para criar ESP acima da cabeça
+function criarESP(character, texto, cor)
+    if character and character:FindFirstChild("Head") and not character:FindFirstChild("SallesESP") then
+        local esp = Instance.new("BillboardGui", character)
+        esp.Name = "SallesESP"
+        esp.Adornee = character.Head
+        esp.Size = UDim2.new(0, 100, 0, 40)
+        esp.StudsOffset = Vector3.new(0, 2, 0)
+        esp.AlwaysOnTop = true
+
+        local label = Instance.new("TextLabel", esp)
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = texto
+        label.TextColor3 = cor
+        label.TextScaled = true
+        label.Font = Enum.Font.SourceSansBold
+    end
+end
+
+-- Verifica os personagens do mapa para colocar ESP
+function verificarPersonagens()
+    local achouSecreto = false
+
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+            local nome = obj.Name:lower()
+            if nome:find("secret") then
+                criarESP(obj, "secret", Color3.fromRGB(0, 0, 0)) -- Preto
+                achouSecreto = true
+            elseif nome:find("god") then
+                criarESP(obj, "god", Color3.fromRGB(255, 0, 255)) -- Rosa
+            end
+        end
+    end
+
+    return achouSecreto
+end
+
+-- Lista de servidores já visitados
+local visitados = {}
+
+-- Server Hop automático se não houver secreto
+function iniciarServerHop()
+    task.wait(3) -- Espera um pouco para garantir que o mapa carregou
+    local temSecreto = verificarPersonagens()
+
+    if temSecreto then
+        warn("Encontrado brainrot secreto! Parando Server Hop.")
+        return
+    end
+
+    local cursor = ""
+    while true do
+        local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+        if cursor ~= "" then
+            url = url .. "&cursor=" .. cursor
+        end
+
+        local success, response = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and response and response.data then
+            for _, server in ipairs(response.data) do
+                if server.playing > 0 and server.id ~= game.JobId and not table.find(visitados, server.id) then
+                    table.insert(visitados, server.id)
+                    TeleportService:TeleportToPlaceInstance(PlaceId, server.id, LocalPlayer)
+                    return
+                end
+            end
+
+            if response.nextPageCursor then
+                cursor = response.nextPageCursor
+            else
+                break
+            end
+        else
+            warn("Erro ao buscar servidores.")
+            break
+        end
+
+        task.wait(1)
+    end
+end
+
+-- Começa o processo
+iniciarServerHop()
