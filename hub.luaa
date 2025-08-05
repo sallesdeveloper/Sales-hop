@@ -1,157 +1,166 @@
--- Salles Hop - Hub completo com detecção e ESP
-local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local LocalPlayer = Players.LocalPlayer
-local PlaceId = game.PlaceId
-
--- UI Principal
-local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+-- Salles Hop (interface e funções completas)
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "SallesHop"
 
--- Título
-local titulo = Instance.new("TextLabel", gui)
-titulo.Size = UDim2.new(0, 400, 0, 50)
-titulo.Position = UDim2.new(0.5, -200, 0.05, 0)
-titulo.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-titulo.Text = "SALLES HOP"
-titulo.TextColor3 = Color3.new(1, 1, 1)
-titulo.TextScaled = true
-titulo.Font = Enum.Font.SourceSansBold
+-- Funções auxiliares
+local function criarTexto(pai, pos, tamanho, texto, corFundo, corTexto)
+	local lbl = Instance.new("TextLabel", pai)
+	lbl.Size = tamanho
+	lbl.Position = pos
+	lbl.Text = texto
+	lbl.BackgroundColor3 = corFundo
+	lbl.TextColor3 = corTexto
+	lbl.TextScaled = true
+	lbl.Font = Enum.Font.SourceSansBold
+	lbl.BorderSizePixel = 0
+	return lbl
+end
 
--- Subtítulo
-local subtitulo = Instance.new("TextLabel", gui)
-subtitulo.Size = UDim2.new(0, 400, 0, 30)
-subtitulo.Position = UDim2.new(0.5, -200, 0.14, 0)
-subtitulo.BackgroundTransparency = 1
-subtitulo.Text = "Sistema Avançado de Detecção"
-subtitulo.TextColor3 = Color3.new(1, 1, 1)
-subtitulo.TextScaled = true
-subtitulo.Font = Enum.Font.SourceSans
+local function criarBotao(pai, pos, texto, cor, callback)
+	local btn = Instance.new("TextButton", pai)
+	btn.Size = UDim2.new(0, 140, 0, 40)
+	btn.Position = pos
+	btn.Text = texto
+	btn.BackgroundColor3 = cor
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.TextScaled = true
+	btn.Font = Enum.Font.SourceSansBold
+	btn.BorderSizePixel = 0
+	btn.MouseButton1Click:Connect(callback)
+	return btn
+end
 
--- Status
-local status = Instance.new("TextLabel", gui)
-status.Size = UDim2.new(0, 400, 0, 30)
-status.Position = UDim2.new(0.5, -200, 0.2, 0)
-status.BackgroundTransparency = 1
-status.Text = "Esperando ação..."
-status.TextColor3 = Color3.new(1, 1, 1)
-status.TextScaled = true
-status.Font = Enum.Font.SourceSans
+-- Interface
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 400, 0, 250)
+frame.Position = UDim2.new(0.5, -200, 0.5, -125)
+frame.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+frame.BorderSizePixel = 0
+
+local titulo = criarTexto(frame, UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0, 50), "SALLES HOP", Color3.fromRGB(0, 80, 200), Color3.new(1, 1, 1))
+local subtitulo = criarTexto(frame, UDim2.new(0, 0, 0, 50), UDim2.new(1, 0, 0, 30), "Sistema Avançado de Detecção", Color3.fromRGB(0, 100, 220), Color3.new(1, 1, 1))
+local status = criarTexto(frame, UDim2.new(0, 0, 0, 90), UDim2.new(1, 0, 0, 30), "Status: Aguardando...", Color3.fromRGB(0, 120, 255), Color3.new(1, 1, 1))
+
+local pararBtn -- declarado antes para ser acessível
+local rodando = false
+local visitados = {}
+local totalVerificados = 0
+
+-- ESP Function
+local function aplicarESP(nomeTag, cor, listaNomes)
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
+			for _, nome in pairs(listaNomes) do
+				if obj.Name:lower():find(nome:lower()) then
+					if not obj.Head:FindFirstChild(nomeTag) then
+						local tag = Instance.new("BillboardGui", obj.Head)
+						tag.Name = nomeTag
+						tag.Size = UDim2.new(0, 100, 0, 40)
+						tag.AlwaysOnTop = true
+						local txt = Instance.new("TextLabel", tag)
+						txt.Size = UDim2.new(1, 0, 1, 0)
+						txt.BackgroundTransparency = 1
+						txt.Text = nomeTag:lower()
+						txt.TextColor3 = cor
+						txt.TextScaled = true
+						txt.Font = Enum.Font.SourceSansBold
+					end
+				end
+			end
+		end
+	end
+end
 
 -- Botões
-local function criarBotao(nome, cor, pos, callback)
-	local botao = Instance.new("TextButton", gui)
-	botao.Size = UDim2.new(0, 120, 0, 40)
-	botao.Position = pos
-	botao.Text = nome
-	botao.BackgroundColor3 = cor
-	botao.TextColor3 = Color3.new(1, 1, 1)
-	botao.TextScaled = true
-	botao.MouseButton1Click:Connect(callback)
-	return botao
-end
-
-local rodando = false
-local btnParar
-local btnIniciar = criarBotao("Iniciar Hop", Color3.fromRGB(0, 120, 255), UDim2.new(0.5, -190, 0.3, 0), function()
-	if rodando then return end
-	rodando = true
-	status.Text = "Buscando próximo servidor..."
-	btnParar.Visible = true
-	buscarServidor()
+criarBotao(frame, UDim2.new(0, 20, 0, 140), "ESP God", Color3.fromRGB(255, 0, 255), function()
+	aplicarESP("god", Color3.fromRGB(255, 105, 180), { "god", "brainrot god" })
 end)
 
-btnParar = criarBotao("Parar", Color3.fromRGB(255, 0, 0), UDim2.new(0.5, -50, 0.3, 0), function()
-	rodando = false
-	status.Text = "Busca cancelada."
-	btnParar.Visible = false
+criarBotao(frame, UDim2.new(0, 240, 0, 140), "ESP Secret", Color3.new(0, 0, 0), function()
+	aplicarESP("secret", Color3.new(0, 0, 0), { "secret", "tralalero", "???", "demon", "golden", "raybom" })
 end)
-btnParar.Visible = false
 
--- ESP GOD
-local function ativarESPGod()
-	for _, npc in pairs(workspace:GetDescendants()) do
-		if npc:IsA("Model") and npc:FindFirstChild("Head") and npc.Name:lower():find("god") then
-			local tag = Instance.new("BillboardGui", npc.Head)
-			tag.Size = UDim2.new(0, 100, 0, 40)
-			tag.AlwaysOnTop = true
-			tag.StudsOffset = Vector3.new(0, 2, 0)
-
-			local label = Instance.new("TextLabel", tag)
-			label.Size = UDim2.new(1, 0, 1, 0)
-			label.BackgroundTransparency = 1
-			label.Text = "god"
-			label.TextColor3 = Color3.fromRGB(255, 105, 180)
-			label.TextScaled = true
-		end
-	end
-end
-
-local btnGod = criarBotao("ESP God", Color3.fromRGB(0, 100, 255), UDim2.new(0.5, 90, 0.3, 0), ativarESPGod)
-
--- ESP SECRET
-local function ativarESPSecret()
-	for _, npc in pairs(workspace:GetDescendants()) do
-		if npc:IsA("Model") and npc:FindFirstChild("Head") and npc.Name:lower():find("secret") then
-			local tag = Instance.new("BillboardGui", npc.Head)
-			tag.Size = UDim2.new(0, 100, 0, 40)
-			tag.AlwaysOnTop = true
-			tag.StudsOffset = Vector3.new(0, 2, 0)
-
-			local label = Instance.new("TextLabel", tag)
-			label.Size = UDim2.new(1, 0, 1, 0)
-			label.BackgroundTransparency = 1
-			label.Text = "secret"
-			label.TextColor3 = Color3.new(0, 0, 0)
-			label.TextScaled = true
-		end
-	end
-end
-
-local btnSecret = criarBotao("ESP Secret", Color3.fromRGB(10, 10, 10), UDim2.new(0.5, -60, 0.4, 0), ativarESPSecret)
-
--- Server Hop Simples (sem HttpService)
-local visitados = {}
-
-local brainrotsSecretos = {
+local secretNomes = {
 	"GOD", "Os Tralaleritos", "DEMON", "Raybom", "Golden Tralalero", "???"
 }
 
-function contemBrainrotSecreto()
-	for _, npc in pairs(workspace:GetDescendants()) do
-		if npc:IsA("Model") then
-			for _, nome in pairs(brainrotsSecretos) do
-				if string.lower(npc.Name):find(string.lower(nome)) then
-					return true
+-- Server Hop Simples
+local function iniciarHop()
+	local TeleportService = game:GetService("TeleportService")
+	local HttpService = game:GetService("HttpService")
+	local placeId = game.PlaceId
+	local cursor = ""
+
+	while rodando do
+		local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
+		if cursor ~= "" then
+			url = url .. "&cursor=" .. cursor
+		end
+
+		local success, res = pcall(function()
+			return HttpService:JSONDecode(game:HttpGet(url))
+		end)
+
+		if success and res and res.data then
+			for _, server in pairs(res.data) do
+				if server.playing > 0 and not table.find(visitados, server.id) then
+					totalVerificados += 1
+					table.insert(visitados, server.id)
+					status.Text = "Verificando servidor " .. totalVerificados
+
+					-- Enviar dados para teleporte
+					local code = [[
+						local secrets = {
+							"GOD", "Os Tralaleritos", "DEMON", "Raybom", "Golden Tralalero", "???"
+						}
+						for _, obj in pairs(workspace:GetDescendants()) do
+							if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+								for _, name in pairs(secrets) do
+									if string.lower(obj.Name):find(string.lower(name)) then
+										game:GetService("TeleportService"):TeleportToPlaceInstance(]] .. placeId .. [[, "]] .. server.id .. [[", game.Players.LocalPlayer)
+									end
+								end
+							end
+						end
+					]]
+
+					writefile("SallesHopScript.lua", code)
+					TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
+					return
 				end
 			end
-		end
-	end
-	return false
-end
 
-function buscarServidor()
-	spawn(function()
-		while rodando do
-			if contemBrainrotSecreto() then
-				status.Text = "Brainrot secreto encontrado! Parando busca."
-				btnParar.Visible = false
-				rodando = false
+			if res.nextPageCursor then
+				cursor = res.nextPageCursor
+			else
 				break
 			end
-
-			-- Procurar servidores simples
-			local servers = game:GetService("TeleportService"):GetPlayerPlaceInstancesAsync(PlaceId, 10)
-			for _, server in pairs(servers:GetChildren()) do
-				local serverId = server.PrivateServerId
-				if not table.find(visitados, serverId) then
-					table.insert(visitados, serverId)
-					status.Text = "Verificando novo servidor..."
-					TeleportService:TeleportToPlaceInstance(PlaceId, server.PrivateServerId, LocalPlayer)
-					break
-				end
-			end
-			wait(2)
+		else
+			warn("Erro ao buscar servidores")
+			break
 		end
-	end)
+
+		task.wait(1)
+	end
 end
+
+-- Iniciar Hop
+local iniciarBtn = criarBotao(frame, UDim2.new(0.5, -70, 0, 190), "Iniciar Hop", Color3.fromRGB(0, 100, 255), function()
+	if not rodando then
+		rodando = true
+		status.Text = "Buscando próximo servidor..."
+		iniciarBtn.Visible = false
+		pararBtn.Visible = true
+		iniciarHop()
+	end
+end)
+
+-- Botão de parar
+pararBtn = criarBotao(frame, UDim2.new(0.5, -70, 0, 190), "PARAR", Color3.fromRGB(255, 0, 0), function()
+	rodando = false
+	status.Text = "Busca parada pelo usuário"
+	pararBtn.Visible = false
+	iniciarBtn.Visible = true
+end)
+pararBtn.Visible = false
