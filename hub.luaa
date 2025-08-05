@@ -1,192 +1,185 @@
--- Salles Hop - Hub Completo
-local player = game.Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local replicated = game:GetService("ReplicatedStorage")
-local runService = game:GetService("RunService")
+-- Salles Hop (Interface + ESP God/Secret com botão do Vegeta)
 
--- ▼ Interface Base ▼
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-screenGui.Name = "SallesHopGUI"
-screenGui.ResetOnSpawn = false
-
--- ▼ Botão Vegeta ▼
-local toggleButton = Instance.new("ImageButton", screenGui)
-toggleButton.Size = UDim2.new(0, 50, 0, 50)
-toggleButton.Position = UDim2.new(0, 10, 1, -60)
-toggleButton.BackgroundTransparency = 1
-toggleButton.Image = "rbxassetid://16427953634" -- ID da imagem do Vegeta (pode trocar)
-
--- ▼ Janela Principal ▼
-local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 300, 0, 250)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -125)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-mainFrame.Visible = false
-mainFrame.BorderSizePixel = 0
-
--- ▼ Título e Subtítulo ▼
-local title = Instance.new("TextLabel", mainFrame)
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-title.Text = "SALLES HOP"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.TextScaled = true
-title.Font = Enum.Font.GothamBold
-
-local subtitle = Instance.new("TextLabel", mainFrame)
-subtitle.Size = UDim2.new(1, 0, 0, 25)
-subtitle.Position = UDim2.new(0, 0, 0, 40)
-subtitle.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-subtitle.Text = "Sistema Avançado de Detecção"
-subtitle.TextColor3 = Color3.new(1, 1, 1)
-subtitle.TextScaled = true
-subtitle.Font = Enum.Font.Gotham
-
--- ▼ Status ▼
-local statusLabel = Instance.new("TextLabel", mainFrame)
-statusLabel.Size = UDim2.new(1, 0, 0, 25)
-statusLabel.Position = UDim2.new(0, 0, 0, 65)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Buscando próximo servidor..."
-statusLabel.TextColor3 = Color3.new(1, 1, 1)
-statusLabel.TextScaled = true
-statusLabel.Font = Enum.Font.Gotham
-
--- ▼ Botões ▼
-local espGodBtn = Instance.new("TextButton", mainFrame)
-espGodBtn.Size = UDim2.new(0.45, 0, 0, 35)
-espGodBtn.Position = UDim2.new(0.05, 0, 0, 100)
-espGodBtn.BackgroundColor3 = Color3.fromRGB(0, 102, 204)
-espGodBtn.Text = "ESP God"
-espGodBtn.TextColor3 = Color3.new(1, 1, 1)
-espGodBtn.TextScaled = true
-espGodBtn.Font = Enum.Font.GothamBold
-
-local espSecretBtn = Instance.new("TextButton", mainFrame)
-espSecretBtn.Size = UDim2.new(0.45, 0, 0, 35)
-espSecretBtn.Position = UDim2.new(0.5, 0, 0, 100)
-espSecretBtn.BackgroundColor3 = Color3.new(0, 0, 0)
-espSecretBtn.Text = "ESP Secret"
-espSecretBtn.TextColor3 = Color3.new(1, 1, 1)
-espSecretBtn.TextScaled = true
-espSecretBtn.Font = Enum.Font.GothamBold
-
-local pararBtn = Instance.new("TextButton", mainFrame)
-pararBtn.Size = UDim2.new(0.9, 0, 0, 35)
-pararBtn.Position = UDim2.new(0.05, 0, 0, 145)
-pararBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-pararBtn.Text = "PARAR"
-pararBtn.TextColor3 = Color3.new(1, 1, 1)
-pararBtn.TextScaled = true
-pararBtn.Font = Enum.Font.GothamBold
-pararBtn.Visible = false
-
--- ▼ Mostrar/Esconder Janela ▼
-toggleButton.MouseButton1Click:Connect(function()
-	mainFrame.Visible = not mainFrame.Visible
-end)
-
--- ▼ Variáveis de Controle ▼
-local rodando = false
-local visitados = {}
-local PlaceId = game.PlaceId
-local teleportService = game:GetService("TeleportService")
-
-local brainrotsSecretos = {
-	"GOD", "Os Tralaleritos", "DEMON", "Raybom", "Golden Tralalero", "???"
+-- IDs dos Brainrots
+local godBrainrots = {
+    "Os Biblicators", "As Demonhearts", "A Bichuda do Sete", "Sol das Trevas",
+    "Os Nucleares do Sistema", "Ursinhos Terroristas", "As Paneludas do Inferno",
+    "As Lendárias do Sistema", "Família do God Saturno", "God Saturno",
+    "Nuclear Satanista", "Saturno Supremo"
 }
 
--- ▼ ESP God e Secret ▼
-local function createESP(part, text, color)
-	local billboard = Instance.new("BillboardGui", part)
-	billboard.Size = UDim2.new(0, 100, 0, 30)
-	billboard.Adornee = part
-	billboard.AlwaysOnTop = true
-	local label = Instance.new("TextLabel", billboard)
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = color
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
+local secretBrainrots = {
+    "La Vacca Saturno Saturnita", "Los Tralaleritos", "Las Tralaleritas",
+    "Las Vaquitas Saturnitas", "Chicleteira Bicicleteira", "Graipuss Medussi",
+    "La Grande Combinasion", "Nuclearo Dinossauro", "Tortuginni Dragonfruitini",
+    "Pot Hotspot", "Garama and Madundung", "Sammyni Spyderini / Chimpanzini Spiderini"
+}
+
+-- Função ESP
+local function criarESP(personagem, texto, cor)
+    if personagem:FindFirstChild("Head") and not personagem.Head:FindFirstChild("ESPLabel") then
+        local billboard = Instance.new("BillboardGui", personagem.Head)
+        billboard.Name = "ESPLabel"
+        billboard.Size = UDim2.new(0, 100, 0, 20)
+        billboard.StudsOffset = Vector3.new(0, 2, 0)
+        billboard.AlwaysOnTop = true
+
+        local label = Instance.new("TextLabel", billboard)
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = texto
+        label.TextColor3 = cor
+        label.TextStrokeTransparency = 0
+        label.TextScaled = true
+        label.Font = Enum.Font.GothamBold
+    end
 end
 
-local function ativarESPGod()
-	for _, npc in pairs(workspace:GetDescendants()) do
-		if npc:IsA("Model") and npc:FindFirstChild("Head") and npc:FindFirstChild("NameTag") then
-			if npc.NameTag.Text:lower():find("god") then
-				createESP(npc.Head, "god", Color3.fromRGB(255, 105, 180)) -- rosa
-			end
-		end
-	end
-end
+-- Interface
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "SallesHopGui"
+gui.ResetOnSpawn = false
 
-local function ativarESPSecret()
-	for _, npc in pairs(workspace:GetDescendants()) do
-		if npc:IsA("Model") and npc:FindFirstChild("Head") and npc:FindFirstChild("NameTag") then
-			for _, nome in pairs(brainrotsSecretos) do
-				if npc.NameTag.Text:lower():find(nome:lower()) then
-					createESP(npc.Head, "secret", Color3.new(0, 0, 0)) -- preto
-				end
-			end
-		end
-	end
-end
+-- Botão Flutuante com Vegeta
+local botaoFlutuante = Instance.new("ImageButton", gui)
+botaoFlutuante.Size = UDim2.new(0, 70, 0, 70)
+botaoFlutuante.Position = UDim2.new(0, 10, 1, -80)
+botaoFlutuante.BackgroundTransparency = 1
+botaoFlutuante.Image = "rbxassetid://15406218239" -- Imagem do Vegeta (sua imagem)
 
--- ▼ Server Hop ▼
-local function buscarServidor()
-	local HttpService = game:GetService("HttpService")
-	local cursor = ""
+-- Janela principal
+local mainFrame = Instance.new("Frame", gui)
+mainFrame.Size = UDim2.new(0, 320, 0, 280)
+mainFrame.Position = UDim2.new(0.5, -160, 0.5, -140)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
+mainFrame.ClipsDescendants = true
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.Active = true
+mainFrame.Draggable = true
 
-	while rodando do
-		local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-		if cursor ~= "" then url = url .. "&cursor=" .. cursor end
+local corner = Instance.new("UICorner", mainFrame)
+corner.CornerRadius = UDim.new(0, 10)
 
-		local success, result = pcall(function()
-			return HttpService:JSONDecode(game:HttpGet(url))
-		end)
+-- Título
+local titulo = Instance.new("TextLabel", mainFrame)
+titulo.Size = UDim2.new(1, 0, 0, 40)
+titulo.Position = UDim2.new(0, 0, 0, 0)
+titulo.Text = "SALLES HOP"
+titulo.TextColor3 = Color3.fromRGB(115, 180, 255)
+titulo.Font = Enum.Font.GothamBlack
+titulo.TextSize = 26
+titulo.BackgroundTransparency = 1
 
-		if success and result and result.data then
-			for _, server in ipairs(result.data) do
-				if server.playing > 0 and not table.find(visitados, server.id) then
-					table.insert(visitados, server.id)
+-- Subtítulo
+local subtitulo = Instance.new("TextLabel", mainFrame)
+subtitulo.Size = UDim2.new(1, 0, 0, 20)
+subtitulo.Position = UDim2.new(0, 0, 0, 38)
+subtitulo.Text = "Sistema Avançado de Detecção"
+subtitulo.TextColor3 = Color3.fromRGB(230, 230, 230)
+subtitulo.Font = Enum.Font.Gotham
+subtitulo.TextSize = 14
+subtitulo.BackgroundTransparency = 1
 
-					-- Detecta secreto antes de teleportar
-					for _, playerData in ipairs(server.playerTokens or {}) do
-						for _, nome in pairs(brainrotsSecretos) do
-							if string.find(playerData, nome) then
-								teleportService:TeleportToPlaceInstance(PlaceId, server.id, player)
-								return
-							end
-						end
-					end
-				end
-			end
-			cursor = result.nextPageCursor or ""
-		end
+-- Status
+local statusBox = Instance.new("Frame", mainFrame)
+statusBox.Size = UDim2.new(1, -30, 0, 70)
+statusBox.Position = UDim2.new(0, 15, 0, 70)
+statusBox.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+Instance.new("UICorner", statusBox).CornerRadius = UDim.new(0, 6)
 
-		wait(1)
-	end
-end
+local statusLabel = Instance.new("TextLabel", statusBox)
+statusLabel.Size = UDim2.new(1, -10, 0, 20)
+statusLabel.Position = UDim2.new(0, 5, 0, 5)
+statusLabel.Text = "Status do Servidor"
+statusLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+statusLabel.Font = Enum.Font.GothamMedium
+statusLabel.TextSize = 14
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- ▼ Botões ▼
-espGodBtn.MouseButton1Click:Connect(ativarESPGod)
-espSecretBtn.MouseButton1Click:Connect(ativarESPSecret)
+local statusSub = Instance.new("TextLabel", statusBox)
+statusSub.Size = UDim2.new(1, -10, 0, 20)
+statusSub.Position = UDim2.new(0, 5, 0, 25)
+statusSub.Text = "Buscando próximo servidor..."
+statusSub.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusSub.Font = Enum.Font.Gotham
+statusSub.TextSize = 16
+statusSub.BackgroundTransparency = 1
+statusSub.TextXAlignment = Enum.TextXAlignment.Left
 
--- Iniciar Hop
-local function iniciarHop()
-	rodando = true
-	pararBtn.Visible = true
-	statusLabel.Text = "Procurando servidor com brainrot secreto..."
-	buscarServidor()
-end
+local contadores = Instance.new("TextLabel", statusBox)
+contadores.Position = UDim2.new(0, 5, 0, 47)
+contadores.Size = UDim2.new(1, -10, 0, 20)
+contadores.Text = "0       0"
+contadores.TextColor3 = Color3.fromRGB(255, 255, 255)
+contadores.Font = Enum.Font.GothamSemibold
+contadores.TextSize = 16
+contadores.BackgroundTransparency = 1
+contadores.TextXAlignment = Enum.TextXAlignment.Left
 
--- Parar Hop
-pararBtn.MouseButton1Click:Connect(function()
-	rodando = false
-	pararBtn.Visible = false
-	statusLabel.Text = "Busca parada."
+-- Botão PARAR
+local parar = Instance.new("TextButton", mainFrame)
+parar.Size = UDim2.new(1, -30, 0, 45)
+parar.Position = UDim2.new(0, 15, 0, 150)
+parar.Text = "PARAR"
+parar.TextColor3 = Color3.new(1, 1, 1)
+parar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+parar.Font = Enum.Font.GothamBold
+parar.TextSize = 20
+Instance.new("UICorner", parar).CornerRadius = UDim.new(0, 8)
+
+-- Botões ESP
+local espGod = Instance.new("TextButton", mainFrame)
+espGod.Size = UDim2.new(0.5, -20, 0, 45)
+espGod.Position = UDim2.new(0, 15, 1, -60)
+espGod.Text = "ESP God"
+espGod.TextColor3 = Color3.new(1, 1, 1)
+espGod.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
+espGod.Font = Enum.Font.GothamBold
+espGod.TextSize = 18
+Instance.new("UICorner", espGod).CornerRadius = UDim.new(0, 6)
+
+local espSecret = Instance.new("TextButton", mainFrame)
+espSecret.Size = UDim2.new(0.5, -20, 0, 45)
+espSecret.Position = UDim2.new(0.5, 5, 1, -60)
+espSecret.Text = "ESP Secret"
+espSecret.TextColor3 = Color3.new(1, 1, 1)
+espSecret.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+espSecret.Font = Enum.Font.GothamBold
+espSecret.TextSize = 18
+Instance.new("UICorner", espSecret).CornerRadius = UDim.new(0, 6)
+
+-- Abrir/Fechar
+botaoFlutuante.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
 end)
 
--- Botão invisível para iniciar hop (pode adicionar um botão "Iniciar Hop" se quiser)
-iniciarHop()
+-- ESP GOD
+espGod.MouseButton1Click:Connect(function()
+    for _, npc in pairs(workspace:GetDescendants()) do
+        if npc:IsA("Model") and npc:FindFirstChild("Head") and npc:FindFirstChild("Humanoid") then
+            if table.find(godBrainrots, npc.Name) then
+                criarESP(npc, "god", Color3.fromRGB(255, 100, 255))
+            end
+        end
+    end
+end)
+
+-- ESP SECRET
+espSecret.MouseButton1Click:Connect(function()
+    for _, npc in pairs(workspace:GetDescendants()) do
+        if npc:IsA("Model") and npc:FindFirstChild("Head") and npc:FindFirstChild("Humanoid") then
+            if table.find(secretBrainrots, npc.Name) then
+                criarESP(npc, "secret", Color3.fromRGB(0, 0, 0))
+            end
+        end
+    end
+end)
+
+-- Desativar função "PARAR" por enquanto
+parar.MouseButton1Click:Connect(function()
+    statusSub.Text = "Parado manualmente."
+end)
