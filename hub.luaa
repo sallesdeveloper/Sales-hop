@@ -1,0 +1,12 @@
+-- Hub Salles Hop (teste simples)
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "SallesHop"
+
+local titulo = Instance.new("TextLabel", gui)
+titulo.Size = UDim2.new(0, 200, 0, 50)
+titulo.Position = UDim2.new(0.5, -100, 0.1, 0)
+titulo.Text = "Salles Hop Ativado!"
+titulo.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+titulo.TextColor3 = Color3.new(1,1,1)
+titulo.TextScaled = true
